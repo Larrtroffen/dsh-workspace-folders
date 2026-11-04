@@ -1,0 +1,72 @@
+/* Workspace icon slot, icon catalog grids and picker cells.
+ *
+ * Everything here is either a 16px inline glyph or a 36px button: no images,
+ * no animation and no layout observers, so an idle sidebar pays nothing for
+ * the catalog. */
+
+.workspaceIconGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.workspaceIconEmoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.iconPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(56vh, 480px);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.iconPickerSection {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.iconPickerGrid {
+  display: grid;
+  grid-template-columns: repeat(8, 36px);
+  gap: 4px;
+  justify-content: start;
+}
+
+.iconPickerCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.iconPickerCell:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.iconPickerCell[aria-selected='true'] {
+  border-color: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary);
+}
+
+.iconPickerEmoji {
+  font-size: 18px;
+  line-height: 1;
+}

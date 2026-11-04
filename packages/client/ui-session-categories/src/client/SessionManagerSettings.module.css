@@ -1,0 +1,279 @@
+/* SessionManagerSettings.module.css — settings-page occupant styles. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 720px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.featureList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+}
+
+.featureIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.featureTitle {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.featureBody {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.batchList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.batch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+}
+
+/* One batch in the bin: its head row, then its Sessions nested underneath.
+   The batch is the unit every verb acts on, so it gets the outer border and
+   the Session rows sit inside it without a competing frame. */
+.batchGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+}
+
+.batchHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batchHead .batchMeta {
+  flex: 1;
+}
+
+.trashList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* One trashed Session: head row plus an optional transcript below it. */
+.trashRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.trashHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trashHead .batchMeta {
+  flex: 1;
+}
+
+.trashMeta {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  word-break: break-all;
+}
+
+/* Stored transcript, scrolled rather than pushing the page. */
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.message {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.messageRole {
+  flex: none;
+  min-width: 58px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+  text-transform: uppercase;
+}
+
+.message[data-role="user"] .messageRole {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.messageText {
+  min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Plugin diagnostic ring. */
+.logList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 280px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.logRow {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.logRow[data-level="error"] .logMessage {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.logTime {
+  flex: none;
+  color: var(--dsw-alias-label-dimmed);
+}
+
+.logAction {
+  flex: none;
+  min-width: 96px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.logMessage {
+  min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+  word-break: break-word;
+}
+
+.batchMeta {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.batchTime {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.empty {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+  padding: 12px 0;
+}
+
+/* The explanatory line under the "bin is empty" statement: quieter than the
+   empty state itself so the fact reads first and the guidance second. */
+.emptyHint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-dimmed);
+}
+
+.error {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.info {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-state-success-primary);
+}

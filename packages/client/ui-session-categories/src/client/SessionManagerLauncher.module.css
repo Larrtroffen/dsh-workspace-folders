@@ -1,0 +1,16 @@
+/* The session-manager dialog opened from the sidebar footer.
+ *
+ * The dialog is wider than the primitives' default and its body scrolls on its
+ * own, because the recycle bin plus the plugin log can outgrow the viewport.
+ * Both are sizing only: no colors, so the host theme keeps owning the palette.
+ */
+
+.dialog {
+  width: min(720px, calc(100vw - 48px));
+  max-height: min(720px, calc(100vh - 96px));
+}
+
+.dialogContent {
+  max-height: min(560px, calc(100vh - 220px));
+  overflow-y: auto;
+}

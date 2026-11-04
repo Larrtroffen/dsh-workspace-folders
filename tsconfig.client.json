@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.client.json",
+  "compilerOptions": {
+    "rootDir": "packages/client/ui-session-categories/src",
+    "outDir": "lib/types",
+    "skipLibCheck": true,
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true
+  },
+  "include": ["packages/client/ui-session-categories/src/**/*.ts", "packages/client/ui-session-categories/src/**/*.tsx"]
+}

@@ -1,0 +1,7 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="dsh-workspace-folders">
+  <rect width="180" height="180" rx="40" fill="#1F1F1F"/>
+  <rect x="38" y="66" width="104" height="70" rx="14" stroke="#F2F2F2" stroke-width="9"/>
+  <path d="M44 66V58C44 52.477 48.477 48 54 48H86C88.5 48 90.9 48.9 92.8 50.6L101.2 58.2" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="136" cy="56" r="11" fill="#1F1F1F"/>
+  <circle cx="136" cy="56" r="8" stroke="#FF7A59" stroke-width="6"/>
+</svg>
