@@ -593,3 +593,11 @@
   align-items: center;
   justify-content: center;
 }
+
+/* The expanded body of a display folder while a Workspace drag is inside it:
+   "release here to file into this folder". The header row lights up too, so
+   the whole folder block reads as one drop target. */
+.workspaceFolderContentsDrop {
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);
+}

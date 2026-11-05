@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 — 2026-11-05
+
+- Fixed filing more than one Workspace into a display folder: the expanded body
+  of a folder (and every Workspace row inside it) now accepts a Workspace drop
+  as "file into this folder", with the folder header highlighting as feedback.
+  Previously only the 28px folder header was a target, so a drop on the visible
+  folder block silently did nothing.
+- Dropping a Workspace inside a folder it already belongs to still re-orders it
+  there; dropping it onto the Unfiled block takes it out of its folder.
+
 ## 1.0.0 — 2026-11-05
 
 First public release. A fork of `dsh-session-keeper` 1.2.1 (itself derived from

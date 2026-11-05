@@ -403,6 +403,12 @@ function SessionTree({
   const [workspaceDrag, setWorkspaceDrag] = useState<WorkspaceDragState | null>(null)
   /** Source folder id of an in-flight display-folder drag; rows own the zone. */
   const [folderDragId, setFolderDragId] = useState<string | null>(null)
+  /**
+   * Display folder whose block a Workspace drag is currently over — the row
+   * itself or the expanded body underneath it. The header row highlights from
+   * this so dropping anywhere on the folder block reads as the same action.
+   */
+  const [workspaceFolderHover, setWorkspaceFolderHover] = useState<string | null>(null)
   const [pendingCategorySession, setPendingCategorySession] = useState<{
     workspaceId: WorkspaceId
     categoryId: SessionCategoryId
@@ -511,6 +517,9 @@ function SessionTree({
     ? contentRootGroups.filter(group => group.workspaceId === undefined || folderForest.assignments[group.workspaceId] === undefined)
     : contentRootGroups
   const unfiledExpanded = workspaceFolderExpansion[UNFILED_WORKSPACE_FOLDER_KEY] !== false
+  /** Display folder currently owning one Workspace, or null when unfiled. */
+  const folderOfWorkspace = (workspaceId: WorkspaceId | undefined): string | null =>
+    workspaceId === undefined ? null : (folderForest.assignments[workspaceId] ?? null)
   const folderWorkspaceCount = (node: WorkspaceFolderNode): number =>
     countDirectWorkspaces(workspaceRootIds, node.id, folderForest.assignments)
     + node.children.reduce((total, child) => total + folderWorkspaceCount(child), 0)
@@ -530,6 +539,7 @@ function SessionTree({
     if (workspaceDrag === null) return
     const workspaceId = workspaceDrag.workspaceId
     setWorkspaceDrag(null)
+    setWorkspaceFolderHover(null)
     if (folderId !== null) setWorkspaceFolderExpanded(folderId, true)
     assignWorkspaceFolder(workspaceId, folderId)
   }
@@ -897,9 +907,11 @@ function SessionTree({
             const workspaceDragProps = workspaceId === undefined ? undefined : {
               start: () => {
                 workspaceDropCommitted.current = false
+                setWorkspaceFolderHover(null)
                 setWorkspaceDrag({ workspaceId, over: null })
               },
               end: () => {
+                setWorkspaceFolderHover(null)
                 if (workspaceDrag?.over !== null && workspaceDrag?.over !== undefined) {
                   commitWorkspaceDrag(workspaceDrag, workspaceDrag.over)
                 } else {
@@ -989,12 +1001,28 @@ function SessionTree({
                   : (e) => {
                     e.preventDefault()
                     e.dataTransfer.dropEffect = 'move'
+                    // A Workspace dragged from another folder (or from Unfiled)
+                    // files into this row's folder when released here; only a
+                    // same-folder drag re-orders. Without this, dropping onto
+                    // the expanded body of a folder silently did nothing.
+                    const targetFolder = folderOfWorkspace(workspaceId)
+                    if (targetFolder !== folderOfWorkspace(workspaceDrag.workspaceId)) {
+                      setWorkspaceFolderHover(targetFolder ?? UNFILED_WORKSPACE_FOLDER_KEY)
+                      setWorkspaceDrag(active => (active === null ? active : { ...active, over: null }))
+                      return
+                    }
+                    setWorkspaceFolderHover(null)
                     hoverWorkspace(workspaceGroupHalf(e))
                   }}
                 onDrop={workspaceDrag === null || dropWorkspace === undefined
                   ? undefined
                   : (e) => {
                     e.preventDefault()
+                    const targetFolder = folderOfWorkspace(workspaceId)
+                    if (targetFolder !== folderOfWorkspace(workspaceDrag.workspaceId)) {
+                      commitWorkspaceDropOnFolder(targetFolder)
+                      return
+                    }
                     dropWorkspace(workspaceGroupHalf(e))
                   }}
               >
@@ -1109,6 +1137,7 @@ function SessionTree({
           workspaceDragActive={workspaceDrag !== null}
           icon={workspaceFolderIcons[node.id]}
           onPickIcon={() => { onPickWorkspaceFolderIcon(node.id, node.title) }}
+          workspaceHovered={workspaceFolderHover === node.id}
           moveTargets={folderMoveTargets(node.id)}
           onToggle={() => { setWorkspaceFolderExpanded(node.id, !node.expanded) }}
           onRename={renameWorkspaceFolder}
@@ -1122,7 +1151,30 @@ function SessionTree({
           t={t}
         />
         {node.expanded && (
-          <div role="group" className={css.workspaceChildGroup}>
+          <div
+            role="group"
+            className={clsx(css.workspaceChildGroup, workspaceFolderHover === node.id && css.workspaceFolderContentsDrop)}
+            // The folder's expanded body is part of the drop target: a user
+            // dropping a Workspace "on the folder" usually lands on a child
+            // row or the gap below it, not on the 28px header. Child rows keep
+            // their own same-folder reorder handling; anything else files the
+            // Workspace here.
+            onDragOver={workspaceDrag === null ? undefined : (event) => {
+              if (event.defaultPrevented) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              setWorkspaceFolderHover(node.id)
+            }}
+            onDragLeave={workspaceDrag === null ? undefined : (event) => {
+              if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
+              setWorkspaceFolderHover(current => (current === node.id ? null : current))
+            }}
+            onDrop={workspaceDrag === null ? undefined : (event) => {
+              if (event.defaultPrevented) return
+              event.preventDefault()
+              commitWorkspaceDropOnFolder(node.id)
+            }}
+          >
             {node.children.map(child => renderFolderNode(child))}
             {memberGroups.map(group => renderGroup(group))}
           </div>
@@ -1156,13 +1208,34 @@ function SessionTree({
           containsCurrent={unfiledGroups.some(group => group.containsCurrent)}
           folderDragActive={folderDragId !== null}
           workspaceDragActive={workspaceDrag !== null}
+          workspaceHovered={workspaceFolderHover === UNFILED_WORKSPACE_FOLDER_KEY}
           onToggle={() => { setWorkspaceFolderExpanded(UNFILED_WORKSPACE_FOLDER_KEY, !unfiledExpanded) }}
           onFolderDrop={(sourceId) => { commitFolderDrop(sourceId, UNFILED_WORKSPACE_FOLDER_KEY, 'inside') }}
           onWorkspaceDrop={() => { commitWorkspaceDropOnFolder(null) }}
           t={t}
         />
         {unfiledExpanded && (
-          <div role="group" className={css.workspaceChildGroup}>
+          <div
+            role="group"
+            className={clsx(css.workspaceChildGroup, workspaceFolderHover === UNFILED_WORKSPACE_FOLDER_KEY && css.workspaceFolderContentsDrop)}
+            // Dropping a Workspace anywhere on the Unfiled block takes it out
+            // of its folder, mirroring the "drop on the bucket" gesture.
+            onDragOver={workspaceDrag === null ? undefined : (event) => {
+              if (event.defaultPrevented) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              setWorkspaceFolderHover(UNFILED_WORKSPACE_FOLDER_KEY)
+            }}
+            onDragLeave={workspaceDrag === null ? undefined : (event) => {
+              if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
+              setWorkspaceFolderHover(current => (current === UNFILED_WORKSPACE_FOLDER_KEY ? null : current))
+            }}
+            onDrop={workspaceDrag === null ? undefined : (event) => {
+              if (event.defaultPrevented) return
+              event.preventDefault()
+              commitWorkspaceDropOnFolder(null)
+            }}
+          >
             {unfiledGroups.map(group => renderGroup(group))}
           </div>
         )}

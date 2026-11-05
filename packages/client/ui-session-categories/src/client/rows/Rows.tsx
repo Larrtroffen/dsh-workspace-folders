@@ -537,7 +537,7 @@ function workspaceFolderDropZone(event: { clientY: number; currentTarget: HTMLEl
 export function WorkspaceFolderRow({
   node, unfiled = false, workspaceCount, containsCurrent, folderDragActive, workspaceDragActive,
   moveTargets, onToggle, onRename, onDelete, onCreateChild, onMove, onFolderDrop, onWorkspaceDrop,
-  icon, onPickIcon, onDragStart, onDragEnd, t,
+  icon, onPickIcon, workspaceHovered = false, onDragStart, onDragEnd, t,
 }: {
   node: WorkspaceFolderNode
   /** True for the synthetic bucket that owns Workspaces no folder claims. */
@@ -565,6 +565,8 @@ export function WorkspaceFolderRow({
   onFolderDrop?: ((sourceFolderId: string, targetId: string, zone: WorkspaceFolderDropZone) => void) | undefined
   /** A Workspace row dropped on this folder: file it (folder) or unfiled it (bucket). */
   onWorkspaceDrop: () => void
+  /** The folder's expanded body is under a Workspace drag, so the header lights up too. */
+  workspaceHovered?: boolean
   /** Folder drag lifecycle, owned by the tree so row styles can react to it. */
   onDragStart?: (() => void) | undefined
   onDragEnd?: (() => void) | undefined
@@ -609,7 +611,7 @@ export function WorkspaceFolderRow({
         dropZone === 'inside' && css.workspaceFolderDropInside,
         dropZone === 'before' && css.dropBefore,
         dropZone === 'after' && css.dropAfter,
-        workspaceOver && css.workspaceFolderWorkspaceOver,
+        (workspaceOver || workspaceHovered) && css.workspaceFolderWorkspaceOver,
       )}
       role="treeitem"
       aria-label={node.title}
