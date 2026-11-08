@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.2 — 2026-11-08
+
+- Added a Workspace-level **Archive all sessions…** action to the Workspace row
+  menu. It archives every idle Session of that Workspace in one confirmation,
+  skipping running Sessions (reported in the dialog) so a one-click cleanup
+  never stops in-flight work, and never touching the Session the main view has
+  open. The archive section and the row menus' existing Unarchive verb remain
+  the inverse path.
+
 ## 1.0.1 — 2026-11-05
 
 - Fixed filing more than one Workspace into a display folder: the expanded body

@@ -20,6 +20,9 @@ sidebar. Session folders are durable (`dsh-session-keeper`'s host-side storage).
 - Create, rename, delete, collapse and re-order folders from the sidebar itself.
 - File a Workspace by dragging its row anywhere onto a folder block (the header
   row or its expanded body), or through the row's `… → Move to folder…` menu.
+- Clean up a Workspace in one step with `… → Archive all sessions…`: it archives
+  every idle Session there (running Sessions are listed as skipped, so nothing
+  in flight is stopped) and never touches the Session you have open.
 - Drop a folder on the middle of another folder to nest it; drop it on the top/bottom edge to
   re-order siblings. Drag a Workspace onto **Unfiled** to take it out of a folder.
 - Dropping a Workspace inside the folder it already belongs to re-orders it there; anywhere

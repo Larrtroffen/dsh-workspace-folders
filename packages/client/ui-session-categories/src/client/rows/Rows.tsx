@@ -161,6 +161,11 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, icon, onPic
     /** Open the icon picker for this Workspace row. */
     setIcon?: (() => void) | undefined
     /**
+     * Archive every unarchived Session of this Workspace in one action.
+     * Absent when the Workspace has nothing left to archive.
+     */
+    archiveAll?: (() => void) | undefined
+    /**
      * Display-folder placement for this Workspace row: the browser-local
      * folders it can be filed into, the folder it currently sits in, and the
      * verb that rewrites that one assignment. Display-only — no Workspace,
@@ -191,6 +196,7 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, icon, onPic
   const workspaceMenuItems = [
     ...(actions?.createCategory === undefined ? [] : [{ id: 'create-category', label: t('category.create'), icon: <IconPlusOutlineRegular /> }]),
     ...(actions?.setIcon === undefined ? [] : [{ id: 'set-icon', label: t('icon.pick'), icon: <IconSparkleRegular /> }]),
+    ...(actions?.archiveAll === undefined ? [] : [{ id: 'archive-all', label: t('menu.archiveAll'), icon: <IconArchiveOutlineRegular /> }]),
     // Display-folder placement: a submenu instead of a dialog keeps the action
     // in the same menu the user already opened on the row.
     ...(folderMove === undefined ? [] : [{
@@ -276,6 +282,7 @@ export function ProjectRowItem({ group, onToggle, onCreate, actions, icon, onPic
               /* v8 ignore next -- workspaceMenuItems carries exactly these rows today. */
               if (id === 'create-category') { actions.createCategory?.(); return }
               if (id === 'set-icon') { actions.setIcon?.(); return }
+              if (id === 'archive-all') { actions.archiveAll?.(); return }
               if (id !== 'rename' && id !== 'delete') return
               if (id === 'rename') actions.rename()
               else actions.delete()

@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-folders",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Display-only folder grouping for Workspaces in the DeepSeek Harness sidebar, plus durable per-Workspace Session folders, with per-row icon customization.",
   "license": "MIT",
   "type": "module",

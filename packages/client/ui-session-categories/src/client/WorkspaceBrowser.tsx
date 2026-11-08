@@ -364,6 +364,14 @@ type SessionTreeProps = Pick<
   onPickWorkspaceIcon: (workspaceId: WorkspaceId, title: string) => void
   /** Open the browser-owned icon picker for one display folder row. */
   onPickWorkspaceFolderIcon: (folderId: string, title: string) => void
+  /** Open the browser-owned "archive every Session of this Workspace" dialog. */
+  onArchiveAllRequest: (target: {
+    workspaceId: WorkspaceId
+    title: string
+    sessionIds: readonly SessionNode['id'][]
+    skippedRunning: number
+    skippedCurrent: boolean
+  }) => void
   /** Persist one folder's expanded state. */
   setWorkspaceFolderExpanded: (key: string, expanded: boolean) => void
   /** Rename a display folder (browser-local; no Host call). */
@@ -385,6 +393,7 @@ function SessionTree({
   categoryExpansion, setCategoryExpanded, onCreateCategory, onDeleteCategory,
   workspaceFolders, workspaceFolderAssignments, workspaceFolderExpansion,
   workspaceIcons, workspaceFolderIcons, onPickWorkspaceIcon, onPickWorkspaceFolderIcon,
+  onArchiveAllRequest,
   setWorkspaceFolderExpanded, renameWorkspaceFolder, deleteWorkspaceFolder,
   moveWorkspaceFolder, assignWorkspaceFolder, onCreateWorkspaceFolder,
   onRenameRequest, onDeleteRequest, onSessionRename, onSessionArchive, onSessionUnarchive, onSessionDelete,
@@ -571,6 +580,11 @@ function SessionTree({
   const now = Date.now()
   /** Pin set as a lookup, so anchor resolution can skip hoisted rows cheaply. */
   const pinnedSet = useMemo(() => new Set(pinnedSessionIds as readonly string[]), [pinnedSessionIds])
+  /** Archive set as a lookup for the per-Workspace bulk-archive candidate scan. */
+  const archivedRawSet = useMemo(
+    () => new Set(archivedSessionIdsRaw as readonly string[]),
+    [archivedSessionIdsRaw],
+  )
   /**
    * Translate a pointer hit in the *rendered* row list into an anchor in the
    * *stored* order.
@@ -687,6 +701,31 @@ function SessionTree({
    */
   const renderGroup = (group: GroupNode): ReactNode => {
             const workspaceId = group.workspaceId
+            // Bulk-archive candidates: the Workspace's live member Sessions
+            // that are neither archived, blank, nor the Session currently open
+            // in the main view (archiving the open Session would clear the
+            // selection the user is reading).
+            const workspaceSessionIds = workspaceId === undefined
+              ? []
+              : (orderedWorkspaces.find(workspace => workspace.workspaceId === workspaceId)?.sessionIds ?? [])
+            // Any Session the shell's main view retains is "what the user is
+            // reading right now". There can be more than one transient
+            // retention (a pre-created New Session slot plus the opened one),
+            // so skip all of them rather than trusting a single `current`.
+            const archivedMainView = (sessionId: SessionNode['id']): boolean =>
+              ((list.byId[sessionId] as { retainedBy?: { mainView?: number } } | undefined)?.retainedBy?.mainView ?? 0) > 0
+            const archiveAllEligible = workspaceSessionIds
+              .filter(sessionId => list.byId[sessionId] !== undefined
+                && (list.byId[sessionId] as { origin?: string }).origin !== 'subagent'
+                && list.byId[sessionId]!.blank !== true
+                && !archivedRawSet.has(sessionId)
+                && sessionId !== current
+                && !archivedMainView(sessionId))
+            // One-click archiving never stops work: running Sessions are
+            // reported as skipped and can be archived once they finish.
+            const archiveAllCandidates = archiveAllEligible
+              .filter(sessionId => list.byId[sessionId]?.running !== true)
+            const archiveAllSkippedRunning = archiveAllEligible.length - archiveAllCandidates.length
             const categorySnapshot = workspaceId === undefined ? undefined : categorySnapshots[workspaceId]
             const categoryProjection = workspaceId === undefined || categorySnapshot === undefined
               ? undefined
@@ -1066,6 +1105,20 @@ function SessionTree({
                       setIcon: () => {
                         if (workspaceId !== undefined) onPickWorkspaceIcon(workspaceId, group.label)
                       },
+                      // One-click "archive every Session in this Workspace".
+                      // Only offered while it would archive something.
+                      archiveAll: workspaceId === undefined || archiveAllCandidates.length === 0
+                        ? undefined
+                        : () => {
+                          onArchiveAllRequest({
+                            workspaceId,
+                            title: group.label,
+                            sessionIds: archiveAllCandidates,
+                            skippedRunning: archiveAllSkippedRunning,
+                            skippedCurrent: workspaceSessionIds.some(sessionId =>
+                              sessionId === current || archivedMainView(sessionId)),
+                          })
+                        },
                       // Display-folder placement lives on the same row menu the
                       // user already opened; it writes only the browser-local
                       // assignment (and expands a collapsed target).
@@ -1854,6 +1907,54 @@ export function WorkspaceBrowser({
     }
   }
 
+  // Bulk archive: one confirmation for "archive every Session of this
+  // Workspace". The Host stops running Sessions when `stopActivity` is set, so
+  // this dialog names that up front; the action is reversible (unarchive).
+  const [archiveAllTarget, setArchiveAllTarget] = useState<{
+    workspaceId: WorkspaceId
+    title: string
+    sessionIds: readonly SessionId[]
+    skippedRunning: number
+    skippedCurrent: boolean
+  } | null>(null)
+  const [archiveAllBusy, setArchiveAllBusy] = useState(false)
+  const [archiveAllError, setArchiveAllError] = useState<string | null>(null)
+  const requestArchiveAll = (target: {
+    workspaceId: WorkspaceId
+    title: string
+    sessionIds: readonly SessionId[]
+    skippedRunning: number
+    skippedCurrent: boolean
+  }) => {
+    setWsPickerOpen(false)
+    setArchiveAllTarget(target)
+    setArchiveAllError(null)
+  }
+  const closeArchiveAll = () => {
+    if (archiveAllBusy) return
+    setArchiveAllTarget(null)
+    setArchiveAllError(null)
+  }
+  const confirmArchiveAll = async () => {
+    const target = archiveAllTarget
+    if (target === null || archiveAllBusy || target.sessionIds.length === 0) return
+    setArchiveAllBusy(true)
+    setArchiveAllError(null)
+    const results = await Promise.allSettled(
+      target.sessionIds.map(sessionId => archiveSession(sessionId)),
+    )
+    const failed = target.sessionIds.filter((_, index) => results[index]?.status === 'rejected')
+    setArchiveAllBusy(false)
+    if (failed.length === 0) {
+      setArchiveAllTarget(null)
+      return
+    }
+    // Keep the dialog open on partial failure so the remaining rows can be
+    // retried without reopening the menu; only the failed ids stay in scope.
+    setArchiveAllTarget({ ...target, sessionIds: failed, skippedRunning: 0 })
+    setArchiveAllError(t('archiveAll.partial', { failed: failed.length, total: target.sessionIds.length }))
+  }
+
   // Icon picker: one dialog serves both Workspace and display-folder rows. The
   // catalog itself is rendered only while this state is set.
   const [iconPicker, setIconPicker] = useState<
@@ -2235,6 +2336,7 @@ export function WorkspaceBrowser({
                 workspaceFolderIcons={workspaceFolderIcons}
                 onPickWorkspaceIcon={requestWorkspaceIcon}
                 onPickWorkspaceFolderIcon={requestWorkspaceFolderIcon}
+                onArchiveAllRequest={requestArchiveAll}
                 setWorkspaceFolderExpanded={actions.setWorkspaceFolderExpanded}
                 renameWorkspaceFolder={actions.renameWorkspaceFolder}
                 deleteWorkspaceFolder={actions.deleteWorkspaceFolder}
@@ -2254,6 +2356,34 @@ export function WorkspaceBrowser({
               />
             ))}
       </div>
+
+      <Modal
+        open={archiveAllTarget !== null}
+        onClose={closeArchiveAll}
+        closeLabel={t('close')}
+        title={t('archiveAll.title')}
+        {...archiveAllTarget === null ? {} : {
+          description: [
+            t('archiveAll.desc', { name: archiveAllTarget.title, n: archiveAllTarget.sessionIds.length }),
+            archiveAllTarget.skippedRunning > 0 ? t('archiveAll.running', { n: archiveAllTarget.skippedRunning }) : '',
+            archiveAllTarget.skippedCurrent ? t('archiveAll.current') : '',
+          ].filter(part => part !== '').join(' '),
+        }}
+        footer={(
+          <>
+            <Button variant="outline" disabled={archiveAllBusy} onClick={closeArchiveAll}>{t('cancel')}</Button>
+            <Button
+              variant="primary"
+              disabled={archiveAllBusy || archiveAllTarget === null}
+              onClick={() => { void confirmArchiveAll() }}
+            >
+              {archiveAllBusy ? t('archiveAll.pending') : t('archiveAll.confirm')}
+            </Button>
+          </>
+        )}
+      >
+        {archiveAllError !== null && <div className={css.renameError} role="alert">{archiveAllError}</div>}
+      </Modal>
 
       <Modal
         open={iconPicker !== null}
@@ -2313,7 +2443,7 @@ export function WorkspaceBrowser({
         <input className={css.renameInput} aria-label={t('field.categoryName')} autoFocus disabled={categoryBusy}
           value={categoryDraft} onChange={event => { setCategoryDraft(event.target.value); setCategoryError(null) }}
           onKeyDown={event => { if (event.key === 'Enter') confirmCategoryCreate() }} />
-        {categoryError !== null && <div className={css.error}>{categoryError}</div>}
+        {categoryError !== null && <div className={css.renameError}>{categoryError}</div>}
       </Modal>
 
       <Modal
